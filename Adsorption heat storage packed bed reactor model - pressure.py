@@ -3,6 +3,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+
+# Modifications validations
+Lvalidation = 0.1687  # Reactor length (m)
+Dvalidation = 0.616  # Reactor bed diameter (m)
+w_tvalidation = 0.004 # Wall thickness (m)
+Q_fvalidation = 0.026 # Fluid flow rate (kg/s) (=75 m3/h at 50°C/40% RH)
+T_invalidation = 50+273.15  # Inlet temperature (K) T_f0 = T_in  # Initial fluid temperature (K) et T_s0 = T_in  # Initial solid temperature (K) dans la suite
+T_avalidation = 30+273.15  # Ambient temperature (K)
+T_in_chargevalidation = T_invalidation # Charging temperature (K)
+phi_invalidation = 0 # Inlet relative humidity
+t_maxvalidation = 60
+
 ## Materials constants
 a_air = 33.5e-6 # Air thermal diffusivity at 20°C (m²/s)
 nu_air = 15.1e-6 # Air kinematic viscosity at 20°C (m²/s)
@@ -20,10 +32,10 @@ M_v = 0.018 # Water molar mass (kg/mol)
 M_da = 0.029 # Dry air molar mass (kg/mol)
 
 ## Reactor parameters
-L = 0.2  # Reactor length (m)
-D = 0.72  # Reactor bed diameter (m)
+L = Lvalidation  # Reactor length (m)
+D = Dvalidation  # Reactor bed diameter (m)
 r = D / 2
-w_t = 0.2 # Wall thickness (m)
+w_t = w_tvalidation # Wall thickness (m)
 D_ext = D + 2*w_t # Reactor external diameter (m)
 r_ext = D_ext / 2
 e = 0.4  # Bed void fraction
@@ -45,7 +57,7 @@ f_c_m = rho_c * V_c / ms # Coating mass fraction
 f_z_v = (f_z_m / rho_z) / (f_z_m / rho_z + (1 - f_z_m) / rho_syl) # Coating zeolite volume fraction
 
 
-Q_f = 0.06015 # Fluid flow rate (kg/s) (=180 m3/h at 20°C/70% RH)
+Q_f = Q_fvalidation # Fluid flow rate (kg/s) (=75 m3/h at 50°C/40% RH)
 Ba = (1-e)*f_c_v*f_z_m*rho_c # Zeolite fraction (kg zeolite/m^3 of reactor)
 
 ## Reaction parameters and constants
@@ -67,16 +79,16 @@ D_0 = 4e-7
 
 
 ## Operating conditions
-T_in = 293  # Inlet temperature (K)
-T_f0 = 295  # Initial fluid temperature (K)
-T_s0 = 296  # Initial solid temperature (K)
+T_in = T_invalidation  # Inlet temperature (K)
+T_f0 = T_in  # Initial fluid temperature (K)
+T_s0 = T_in  # Initial solid temperature (K)
 T_w0 = T_f0  # Initial wall temperature (K)
-T_a = 294  # Ambient temperature (K)
-T_in_charge = 453 # Charging temperature (K)
+T_a = T_avalidation  # Ambient temperature (K)
+T_in_charge = T_invalidation # Charging temperature (K)
 
 P_amb = 101325 # Ambient pressure (Pa)
 P_in = P_amb # Inlet pressure (Pa)
-phi_in = 0.7 # Inlet relative humidity
+phi_in = phi_invalidation # Inlet relative humidity
 p_vs = np.exp(23.1964-3816.44/(T_in - 46.13)) # Antoine equation for inlet vapor saturation pressure (Pa)
 p_in = phi_in * p_vs # Inlet vapor pressure (Pa)
 p_0 = 0 # Initial vapor pressure (Pa)
@@ -235,16 +247,17 @@ def reactor_model(t, y):
     # dTf_dt[0] =  1 / (e * rho_da[1:-1] * Cp_da[1:-1]) * (k_eff_f[0] * (T_f[1] - 2*T_f[0] + T_in) / dz**2 - h_fs[0] * a_fs * (T_f[0] - T_s[0]) - h_fw[0] * a_w_int * (T_f[0] - T_w[0]) - u[0] * (rho_da[0] * Cp_da[0] * (T_f[1] - T_in) / (2*dz) + M_v * Cp_v[0] / R * (p[1] - p_in) / (2*dz))) - M_v * Cp_v[0] / (R * rho_da[0] * Cp_da[0]) * dp_dt[0]
     dTf_dt[0] = k_eff_f[0] * (T_f[1] - 2*T_f[0] + T_in) / dz**2
     dTf_dt[0] = dTf_dt[0] - h_fs[0] * a_fs * (T_f[0] - T_s[0])
-    dTf_dt[0] = dTf_dt[0] - h_fw[0] * a_w_int * (T_f[0] - T_w[0])
+#    dTf_dt[0] = dTf_dt[0] - h_fw[0] * a_w_int * (T_f[0] - T_w[0])
+    print("h_fw[0]=", h_fw[0],  "a_w_int=", a_w_int, "T_f[0]", T_f[0]-273.15, "T_w[0]=", T_w[0]-273.15 )
     dTf_dt[0] = dTf_dt[0] - u[0] * (rho_da[0] * Cp_da[0] * (T_f[1] - T_in) / (2*dz) + M_v * Cp_v[0] / R * (p[1] - p_in) / (2*dz))
     dTf_dt[0] = dTf_dt[0] / (e * rho_da[0] * Cp_da[0])
-    dTf_dt[0] = dTf_dt[0] - M_v * Cp_v[0] / (R * rho_da[0] * Cp_da[0]) * dp_dt[0]
+#    dTf_dt[0] = dTf_dt[0] - M_v * Cp_v[0] / (R * rho_da[0] * Cp_da[0]) * dp_dt[0]
     
     #dTf_dt[-1] = 1 / (e * rho_da[-1] * Cp_da[-1]) * (- h_fs[-1] * a_fs * (T_f[-1] - T_s[-1]) - h_fw[-1] * a_w_int * (T_f[-1] - T_w[-1])) - M_v * Cp_v[-1] / (R * rho_da[-1] * Cp_da[-1]) * dp_dt[-1]
     dTf_dt[-1] = - h_fs[-1] * a_fs * (T_f[-1] - T_s[-1])
-    dTf_dt[-1] = dTf_dt[-1] - h_fw[-1] * a_w_int * (T_f[-1] - T_w[-1])
+#    dTf_dt[-1] = dTf_dt[-1] - h_fw[-1] * a_w_int * (T_f[-1] - T_w[-1])
     dTf_dt[-1] = dTf_dt[-1] / (e * rho_da[-1] * Cp_da[-1])
-    dTf_dt[-1] = dTf_dt[-1] - M_v * Cp_v[-1] / (R * rho_da[-1] * Cp_da[-1]) * dp_dt[-1]
+#    dTf_dt[-1] = dTf_dt[-1] - M_v * Cp_v[-1] / (R * rho_da[-1] * Cp_da[-1]) * dp_dt[-1]
 
     # Solid phase
     dTs_dt[0] = (k_eff_s[0] * (T_s[1] - T_s[0]) / dz**2 + h_fs[0] * a_fs * (T_f[0] - T_s[0]) + Ba * (dH - Cp_water[0] * T_s[0]) * dq_dt[0]) / ((1 - e) * rho_s[0] * Cp_s[0] + Ba * q[0] * Cp_water[0])
@@ -258,10 +271,10 @@ def reactor_model(t, y):
     # dTf_dt[1:-1] = 1 / (e * rho_da[1:-1] * Cp_da[1:-1]) * (k_eff_f[1:-1] * (T_f[2:] - 2*T_f[1:-1] + T_f[:-2]) / dz**2 - h_fs[1:-1] * a_fs * (T_f[1:-1] - T_s[1:-1]) - h_fw[1:-1] * a_w_int * (T_f[1:-1] - T_w[1:-1]) - u[1:-1] * (rho_da[1:-1] * Cp_da[1:-1] * (T_f[2:] - T_f[:-2]) / (2*dz) + M_v * Cp_v[1:-1] / R * (p[2:] - p[:-2]) / (2*dz))) - M_v * Cp_v[1:-1] / (R * rho_da[1:-1] * Cp_da[1:-1]) * dp_dt[1:-1]
     dTf_dt[1:-1] = k_eff_f[1:-1] * (T_f[2:] - 2*T_f[1:-1] + T_f[:-2]) / dz**2 # Conduction
     dTf_dt[1:-1] = dTf_dt[1:-1] - h_fs[1:-1] * a_fs * (T_f[1:-1] - T_s[1:-1]) # Convective exchange with solid
-    dTf_dt[1:-1] = dTf_dt[1:-1] - h_fw[1:-1] * a_w_int * (T_f[1:-1] - T_w[1:-1]) # Convective exchange with wall
+#    dTf_dt[1:-1] = dTf_dt[1:-1] - h_fw[1:-1] * a_w_int * (T_f[1:-1] - T_w[1:-1]) # Convective exchange with wall
     dTf_dt[1:-1] = dTf_dt[1:-1] - u[1:-1] * (rho_da[1:-1] * Cp_da[1:-1] * (T_f[2:] - T_f[:-2]) / (2*dz) + M_v * Cp_v[1:-1] / R * (p[2:] - p[:-2]) / (2*dz)) # Transport
     dTf_dt[1:-1] = dTf_dt[1:-1] / (e * rho_da[1:-1] * Cp_da[1:-1]) # dTf_dt multiplicator
-    dTf_dt[1:-1] = dTf_dt[1:-1] - M_v * Cp_v[1:-1] / (R * rho_da[1:-1] * Cp_da[1:-1]) * dp_dt[1:-1] # Vapor pressure change
+#    dTf_dt[1:-1] = dTf_dt[1:-1] - M_v * Cp_v[1:-1] / (R * rho_da[1:-1] * Cp_da[1:-1]) * dp_dt[1:-1] # Vapor pressure change
     
     dTs_dt[1:-1] = (k_eff_s[1:-1] * (T_s[2:] - 2*T_s[1:-1] + T_s[:-2]) / dz**2 + h_fs[1:-1] * a_fs * (T_f[1:-1] - T_s[1:-1]) + Ba * (dH - Cp_water[1:-1] * T_s[1:-1]) * dq_dt[1:-1]) / ((1 - e) * rho_s[1:-1] * Cp_s[1:-1] + Ba * q[1:-1] * Cp_water[1:-1])
     dTw_dt[1:-1] = (k_w[1:-1] * (T_w[2:] - 2*T_w[1:-1] + T_w[:-2]) / dz**2 + h_fw[1:-1] * a_w_int * (T_f[1:-1] - T_w[1:-1]) - h_wa[1:-1] * a_w_ext * (T_w[1:-1] - T_a)) / (rho_w[1:-1] * Cp_w[1:-1])
@@ -271,9 +284,9 @@ def reactor_model(t, y):
 y0 = np.concatenate((np.ones(Nz) * T_f0, np.ones(Nz) * T_s0, np.ones(Nz) * T_w0, np.ones(Nz)*p_0, np.zeros(Nz)))
 
 ## Time span (start, stop, number of points)
-t_max = 3600*1
+t_max = t_maxvalidation
 t_span = (0, t_max)
-t_eval = np.linspace(0, t_max, 100)
+t_eval = np.linspace(0, t_max, int(t_max/3600))
 
 ## Solve ODE system
 solution = solve_ivp(reactor_model, t_span, y0, method='Radau', t_eval=t_eval)
@@ -311,8 +324,8 @@ colors = [
 
 for idx, i in enumerate(np.linspace(0, 99, 11, dtype=int)):
     color = colors[idx % len(colors)]  # Cycle through colors for each `i`
-    axes[0].plot(z, T_s[:, i], label=f"solid, time {i * t_max / 100}", color=color, linestyle=linestyles['_s'])
-    axes[0].plot(z, T_f[:, i], label=f"fluid, time {i * t_max / 100}", color=color, linestyle=linestyles['_f'])
+    axes[0].plot(z, T_s[:, i]-273.15, label=f"solid, time {i * t_max / 100}", color=color, linestyle=linestyles['_s'])
+    axes[0].plot(z, T_f[:, i]-273.15, label=f"fluid, time {i * t_max / 100}", color=color, linestyle=linestyles['_f'])
     #axes[0].plot(z, T_w[:, i], label=f"wall, time {i * t_max / 100}")
     axes[1].plot(z, p[:, i], label=f"time {i * t_max / 100}", color=color)
     axes[2].plot(z, q[:, i], label=f"time {i * t_max / 100}", color=color)
@@ -320,7 +333,7 @@ for idx, i in enumerate(np.linspace(0, 99, 11, dtype=int)):
 
 axes[0].set_title("Temperatures inside the reactor")
 axes[0].set_xlabel("z [m]")
-axes[0].set_ylabel("Temp [K]")
+axes[0].set_ylabel("Temp [°C]")
 axes[0].legend(loc='upper left', bbox_to_anchor=(0,-0.2), ncol=5)
 
 axes[1].set_title("Vapor Pressure inside the reactor")
@@ -340,12 +353,15 @@ plt.show()
 
 ## Plot temperature function of time at outlet
 plt.figure(figsize=(12, 8))
-plt.plot(t_eval, T_f[-1, :], label='')
+plt.plot(t_eval, T_f[-1, :]-273.15, label='')
+plt.gca().yaxis.set_ticks(range(30, 50, 10), minor = True)
+plt.gca().yaxis.grid(True, which = 'both', color = 'gray', zorder = 0)
+
 ## Experimental data for validation
 
 
 plt.xlabel('Time [s]')
-plt.ylabel('Temperature K')
+plt.ylabel('Temperature °C')
 plt.title('Fluid temperature at outlet')
 plt.grid(True)
 plt.show()
